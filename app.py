@@ -39,12 +39,34 @@ if not os.path.exists(db_path):
 # Inicializar la base de datos
 db = SQL(f"sqlite:///{db_path}")
 
-# Crear tablas
+# Crear TODAS las tablas necesarias
 db.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         username TEXT NOT NULL,
         hash TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS finances (
+        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        user_id INTEGER NOT NULL,
+        description TEXT NOT NULL,
+        amount REAL NOT NULL,
+        category TEXT NOT NULL,
+        date DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS activities (
+        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS education (
+        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        total_classes INTEGER NOT NULL,
+        completed_classes INTEGER NOT NULL
     );
 """)
 # ... agrega aquí el resto de tus CREATE TABLE ...
