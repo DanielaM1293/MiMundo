@@ -14,25 +14,27 @@ from translations import LANGS
 from datetime import datetime
 import os
 
+# ... (tu código de importaciones arriba)
+
 # Configuración inicial
 load_dotenv()
 app = Flask(__name__)
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
-app.secret_key = os.urandom(24)
-Session(app)
+# ... (resto de configuraciones)
 
-
-basedir = os.path.abspath(os.path.dirname(__file__))
-
+# Determinamos la ruta
 if os.environ.get("RENDER"):
     db_path = os.path.join("/tmp", "mi_mundo.db")
 else:
     db_path = os.path.join(os.path.dirname(__file__), "mi_mundo.db")
 
+# TRUCO: Crear el archivo si no existe para que CS50 no se queje
+if not os.path.exists(db_path):
+    open(db_path, 'a').close()
+
+# Ahora inicializamos
 db = SQL(f"sqlite:///{db_path}")
 
-# Crear tablas si no existen (Ejemplo básico)
+# Crear tablas
 db.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
