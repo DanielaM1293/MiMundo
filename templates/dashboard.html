@@ -1,0 +1,345 @@
+{% extends layout if layout else 'layout.html' %}
+
+{% block main %}
+
+<div class="space-y-8">
+
+    <!-- HEADER -->
+    <div>
+        <h2 class="text-3xl font-bold text-[#9B8EA8]">
+            {{ _('welcome_back') }}
+        </h2>
+    </div>
+
+
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        {{ greeting }}, {{ username }} 👋
+    </h1>
+
+    <p class="text-gray-500 dark:text-gray-400 mt-1">
+        {{ _('dashboard_subtitle') }}
+    </p>
+</div>
+
+    <!-- DASHBOARD CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+
+        <!-- Balance -->
+        <div class="bg-[#F5F3F0] dark:bg-gray-800 rounded-2xl p-7 border border-gray-200 dark:border-gray-700 shadow-sm transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg">
+
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    {{ _('current_balance') }}
+                </p>
+                <span class="text-2xl"></span>
+            </div>
+
+<h3
+    id="balanceCounter"
+    data-value="{{ balance|default(0)|float }}"
+    class="text-2xl font-bold text-[#9B8EA8]">
+    $0.00
+</h3>
+
+        </div>
+
+        <!-- Pending -->
+        <div class="bg-[#F5F3F0] dark:bg-gray-800 rounded-2xl p-7 border border-gray-200 dark:border-gray-700 shadow-sm transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg">
+
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    {{ _('pending_tasks') }}
+                </p>
+                <span class="text-2xl"></span>
+            </div>
+
+<h3
+    id="pendingCounter"
+    data-value="{{ pending|default(0) }}"
+    class="text-2xl font-bold text-[#9B8EA8]">
+    0
+</h3>
+
+        </div>
+
+        <!-- Courses -->
+        <div class="bg-[#F5F3F0] dark:bg-gray-800 rounded-2xl p-7 border border-gray-200 dark:border-gray-700 shadow-sm transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg">
+
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    {{ _('active_courses') }}
+                </p>
+                <span class="text-2xl"></span>
+            </div>
+
+<h3
+    id="coursesCounter"
+    data-value="{{ total_courses|default(0) }}"
+    class="text-2xl font-bold text-[#9B8EA8]">
+    0
+</h3>
+
+        </div>
+
+        <!-- Progress -->
+        <div class="bg-[#F5F3F0] dark:bg-gray-800 rounded-2xl p-7 border border-gray-200 dark:border-gray-700 shadow-sm transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg">
+
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    {{ _('average_progress') }}
+                </p>
+                <span class="text-2xl"></span>
+            </div>
+
+<h3
+    id="progressCounter"
+    data-value="{{ avg_progress|default(0) }}"
+    class="text-2xl font-bold text-[#9B8EA8]">
+    0%
+</h3>
+
+        </div>
+
+    </div>
+
+    <!-- DAILY QUOTE -->
+    <div class="rounded-3xl bg-gradient-to-r from-[#9B8EA8]/10 via-white to-[#F5F3F0] dark:from-[#9B8EA8]/20 dark:to-gray-800 border border-[#9B8EA8]/20 p-10">
+
+        <span class="uppercase tracking-[4px] text-xs font-bold text-[#9B8EA8]">
+            {{ _('daily_quote') }}
+        </span>
+
+        <p class="mt-5 text-2xl md:text-3xl italic font-serif text-gray-800 dark:text-gray-100 leading-relaxed">
+            {{ quote }}
+        </p>
+
+    </div>
+
+    <!-- QUICK ACCESS + CHART -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- QUICK ACCESS -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8">
+
+            <h3 class="text-xl font-semibold text-[#9B8EA8] mb-6">
+                 {{ _('quick_access') }}
+            </h3>
+
+            <div class="space-y-4">
+
+                <a href="/presupuesto"
+                   class="flex items-center justify-center rounded-xl bg-[#9B8EA8] text-white py-3 px-6 transition hover:bg-[#857792] hover:shadow-md">
+                     {{ _('new_expense') }}
+                </a>
+
+                <a href="/kanban"
+                   class="flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 py-3 px-6 transition hover:bg-gray-200 dark:hover:bg-gray-600">
+                     {{ _('view_kanban') }}
+                </a>
+
+            </div>
+
+        </div>
+
+        <!-- FINANCE CHART -->
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8">
+
+            <div class="flex justify-between items-center mb-6">
+
+                <div>
+
+                    <h3 class="text-xl font-semibold text-[#9B8EA8]">
+                         {{ _('finance') }}
+                    </h3>
+
+                    <p class="text-sm text-gray-500 mt-1">
+                        {{ _('finance_summary') }}
+                    </p>
+
+                </div>
+
+            </div>
+
+            {% if ingresos or gastos or ahorro %}
+
+            <div class="h-80">
+                <canvas id="financeChart"></canvas>
+            </div>
+
+            {% else %}
+
+            <div class="flex items-center justify-center h-80 text-gray-400 text-lg">
+                {{ _('no_finance_data') }}
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<!-- ChartJS -->
+<script>
+
+function animateCounter(id, prefix = "", suffix = "", decimals = 0) {
+
+    const element = document.getElementById(id);
+
+    if (!element) return;
+
+    const target = Number(element.dataset.value);
+    let current = 0;
+
+    const duration = 1200;
+    const increment = target / (duration / 16);
+
+    function update() {
+
+        current += increment;
+
+        if (current >= target) {
+            current = target;
+        } else {
+            requestAnimationFrame(update);
+        }
+
+        element.textContent =
+            prefix +
+            current.toLocaleString(undefined, {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            }) +
+            suffix;
+
+    }
+
+    update();
+
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const canvas = document.getElementById("financeChart");
+
+    if (canvas) {
+
+        new Chart(canvas, {
+
+            type: "bar",
+
+            data: {
+
+                labels: [
+                    "{{ _('income') }}",
+                    "{{ _('expenses') }}",
+                    "{{ _('savings') }}"
+                ],
+
+                datasets: [{
+
+                    data: [
+                        Number({{ ingresos|default(0) }}),
+                        Number({{ gastos|default(0) }}),
+                        Number({{ ahorro|default(0) }})
+                    ],
+
+                    backgroundColor: [
+                        "#9B8EA8",
+                        "#D6B8A5",
+                        "#8CB89A"
+                    ],
+
+                    borderRadius: 12,
+                    borderSkipped: false
+
+                }]
+
+            },
+
+            options: {
+
+                responsive: true,
+                maintainAspectRatio: false,
+
+                animation: {
+                    duration: 1200,
+                    easing: "easeOutQuart"
+                },
+
+                plugins: {
+
+                    legend: {
+                        display: false
+                    },
+
+                    tooltip: {
+                        backgroundColor: "#9B8EA8",
+                        titleColor: "#ffffff",
+                        bodyColor: "#ffffff",
+                        padding: 12,
+                        cornerRadius: 10
+                    }
+
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        grid: {
+                            color: "rgba(200,200,200,.15)"
+                        },
+
+                        ticks: {
+
+                            color: document.documentElement.classList.contains("dark")
+                                ? "#D1D5DB"
+                                : "#6B7280"
+
+                        }
+
+                    },
+
+                    x: {
+
+                        grid: {
+                            display: false
+                        },
+
+                        ticks: {
+
+                            color: document.documentElement.classList.contains("dark")
+                                ? "#D1D5DB"
+                                : "#6B7280"
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        });
+
+    }
+
+    // Animación de las tarjetas
+    animateCounter("balanceCounter", "$", "", 2);
+    animateCounter("pendingCounter");
+    animateCounter("coursesCounter");
+    animateCounter("progressCounter", "", "%");
+
+});
+
+</script>
+
+{% endblock %}

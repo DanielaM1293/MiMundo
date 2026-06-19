@@ -1,0 +1,5 @@
+.env
+mi_mundo.db
+__pycache__/
+flask_session/
+venv/

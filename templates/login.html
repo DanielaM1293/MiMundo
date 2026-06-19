@@ -1,0 +1,24 @@
+{% extends layout if layout else 'layout.html' %}
+
+{% block main %}
+<div class="flex flex-col justify-center items-center h-[70vh] px-4">
+    <!-- Formulario de Login -->
+    <form action="/login" method="post" class="bg-[#F5F3F0] dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-sm border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+        <h2 class="text-2xl font-bold mb-6 text-[#9B8EA8]">{{ _('welcome') }}</h2>
+
+        <input name="username" placeholder="{{ _('placeholder_user') }}" type="text" class="w-full p-2 mb-4 border dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded focus:ring-2 focus:ring-[#9B8EA8] outline-none" required>
+
+        <input name="password" placeholder="{{ _('placeholder_pass') }}" type="password" class="w-full p-2 mb-4 border dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded focus:ring-2 focus:ring-[#9B8EA8] outline-none" required>
+
+        <button type="submit" class="w-full bg-[#9B8EA8] text-white py-2 rounded hover:bg-[#867a94] transition">
+            {{ _('btn_login') }}
+        </button>
+    </form>
+
+    <!-- Enlace de Registro -->
+    <p class="mt-4 text-sm text-gray-600 dark:text-gray-400 text-center">
+        {{ _('no_account') }}
+        <a href="/register" class="text-[#9B8EA8] hover:underline font-bold">{{ _('register_link') }}</a>
+    </p>
+</div>
+{% endblock %}

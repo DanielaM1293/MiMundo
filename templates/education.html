@@ -1,0 +1,219 @@
+{% extends layout if layout else 'layout.html' %}
+
+{% block main %}
+
+<h2 class="text-3xl font-bold text-[#9B8EA8] mb-8">
+    🎓 {{ _('education') }}
+</h2>
+
+<form action="/add_course" method="post"
+      class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow mb-8 border border-gray-200 dark:border-gray-700">
+
+    <div class="grid md:grid-cols-2 gap-4">
+
+        <input
+            name="name"
+            placeholder="{{ _('course_name') }}"
+            required
+            class="border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        >
+
+        <input
+            name="total_classes"
+            type="number"
+            min="1"
+            placeholder="{{ _('total_classes') }}"
+            required
+            class="border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        >
+
+    </div>
+
+    <button
+        type="submit"
+        class="mt-4 bg-[#9B8EA8] text-white px-4 py-2 rounded hover:bg-[#8A7D96] transition">
+        {{ _('add_course') }}
+    </button>
+
+</form>
+
+{% if courses %}
+
+    {% for course in courses %}
+
+        {% set progress = ((course.completed_classes * 100) / course.total_classes)|round|int %}
+
+       {% if progress == 100 %}
+<span class="text-green-500 font-bold">
+    ✓ Completado
+</span>
+{% endif %}
+
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow mb-4 border border-gray-200 dark:border-gray-700">
+
+            <div class="flex justify-between items-center mb-3">
+
+                <h3 class="font-bold text-lg text-gray-800 dark:text-white">
+                    {{ course.name }}
+                </h3>
+
+                <div class="flex gap-2 items-center">
+
+                    <form action="/course/edit/{{ course.id }}" method="get">
+                        <button
+                            type="submit"
+                            class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">
+                            ✏️
+                        </button>
+                    </form>
+
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ course.completed_classes }}/{{ course.total_classes }}
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+
+                <div
+                    class="bg-[#9B8EA8] h-3 rounded-full transition-all duration-300"
+                    style="width: {{ progress }}%;">
+                </div>
+
+            </div>
+
+            <p class="mt-2 text-sm font-semibold text-[#9B8EA8]">
+                {{ progress }}%
+            </p>
+
+            <div class="flex gap-2 mt-4">
+
+                <form action="/course/decrease/{{ course.id }}" method="post">
+                    <button
+                        type="submit"
+                        class="bg-gray-200 dark:bg-gray-600 px-3 py-1 rounded hover:opacity-80 transition">
+                        ➖
+                    </button>
+                </form>
+
+                <form action="/course/increase/{{ course.id }}" method="post">
+                    <button
+                        type="submit"
+                        class="bg-[#9B8EA8] text-white px-3 py-1 rounded hover:bg-[#8A7D96] transition">
+                        ➕
+                    </button>
+                </form>
+
+<form action="/course/delete/{{ course.id }}" method="post"
+      onsubmit="return confirmDelete(event, '{{ course.name }}')">
+    <button
+        type="submit"
+        class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition">
+        🗑️
+    </button>
+</form>
+
+            </div>
+
+        </div>
+
+    {% endfor %}
+
+{% else %}
+
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow text-center border border-gray-200 dark:border-gray-700">
+
+        <p class="text-gray-500 dark:text-gray-400">
+            {{ _('no_courses') }}
+        </p>
+
+    </div>
+
+{% endif %}
+
+<div id="deleteModal"
+     class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-11/12 max-w-md">
+
+        <div class="text-center">
+
+            <div class="text-5xl mb-4">
+                🗑️
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white">
+                {{ _('delete_course_title') }}
+            </h3>
+
+            <p class="text-gray-500 dark:text-gray-400 mt-2">
+                {{ _('delete_course_message') }}
+                <span id="courseName" class="font-semibold text-red-500"></span>?
+            </p>
+
+            <p class="text-sm text-gray-400 mt-1">
+                {{ _('delete_course_warning') }}
+            </p>
+
+        </div>
+
+        <div class="flex justify-center gap-3 mt-6">
+
+            <button
+                onclick="closeDeleteModal()"
+                class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 dark:text-white hover:opacity-80 transition">
+
+                {{ _('cancel') }}
+
+
+            </button>
+
+            <button
+                id="confirmDeleteBtn"
+                class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition">
+
+                {{ _('confirm_delete') }}
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+<script>
+    let deleteForm = null;
+
+    function confirmDelete(event, courseName) {
+        event.preventDefault();
+
+        deleteForm = event.target;
+
+        document.getElementById("courseName").textContent = `"${courseName}"`;
+
+        const modal = document.getElementById("deleteModal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+
+        return false;
+    }
+
+    function closeDeleteModal() {
+        const modal = document.getElementById("deleteModal");
+
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+
+        deleteForm = null;
+    }
+
+    document.getElementById("confirmDeleteBtn").addEventListener("click", () => {
+        if (deleteForm) {
+            deleteForm.submit();
+        }
+    });
+</script>
+{% endblock %}

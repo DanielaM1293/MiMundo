@@ -1,0 +1,9 @@
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+
+# Base de datos local (para que no se suban tus pruebas a GitHub)
+finance.db
+x
+

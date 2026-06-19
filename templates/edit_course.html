@@ -1,0 +1,44 @@
+{% extends layout if layout else 'layout.html' %}
+
+{% block main %}
+
+<h2 class="text-3xl font-bold text-[#9B8EA8] mb-8">
+    ✏️ {{ _('edit_course') }}
+</h2>
+
+<form method="post"
+      class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow border border-gray-200 dark:border-gray-700">
+
+    <label class="block text-sm mb-1 text-gray-600 dark:text-gray-300">
+        {{ _('course_name') }}
+    </label>
+
+    <input
+        name="name"
+        value="{{ course.name }}"
+        required
+        class="border p-2 rounded w-full mb-4 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+    >
+
+    <label class="block text-sm mb-1 text-gray-600 dark:text-gray-300">
+        {{ _('total_classes') }}
+    </label>
+
+    <input
+        name="total_classes"
+        type="number"
+        min="1"
+        value="{{ course.total_classes }}"
+        required
+        class="border p-2 rounded w-full mb-4 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+    >
+
+    <button
+        type="submit"
+        class="bg-[#9B8EA8] text-white px-4 py-2 rounded hover:bg-[#8A7D96] transition">
+        {{ _('save') }}
+    </button>
+
+</form>
+
+{% endblock %}

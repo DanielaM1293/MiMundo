@@ -1,0 +1,12 @@
+{% extends layout if layout else 'layout.html' %}
+
+{% block main %}
+<div class="flex flex-col items-center justify-center min-h-[400px] text-center">
+    <h2 class="text-6xl font-bold text-[#9B8EA8] mb-4">Oops!</h2>
+    <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">{{ message }}</p>
+
+    <a href="/" class="bg-[#9B8EA8] text-white px-6 py-3 rounded-lg hover:bg-[#8A7D96] transition">
+        ← Volver al inicio
+    </a>
+</div>
+{% endblock %}

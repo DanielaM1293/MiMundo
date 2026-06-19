@@ -1,0 +1,21 @@
+{% extends layout if layout else 'layout.html' %}
+
+{% block main %}
+<div class="flex justify-center items-center h-[70vh] px-4">
+    <form action="/register" method="post" class="bg-[#F5F3F0] dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-sm border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+        <h2 class="text-2xl font-bold mb-6 text-[#9B8EA8]">{{ _('register_title') }}</h2>
+
+        <div class="mb-4">
+            <input name="username" placeholder="{{ _('placeholder_user') }}" class="w-full p-2 border dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded focus:ring-2 focus:ring-[#9B8EA8] outline-none" required maxlength="20">
+        </div>
+
+        <div class="mb-6">
+            <input type="password" name="password" placeholder="{{ _('placeholder_pass') }}" class="w-full p-2 border dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded focus:ring-2 focus:ring-[#9B8EA8] outline-none" required minlength="8">
+        </div>
+
+        <button class="w-full bg-[#9B8EA8] text-white py-2 rounded hover:bg-[#867a94] transition">
+            {{ _('btn_register') }}
+        </button>
+    </form>
+</div>
+{% endblock %}

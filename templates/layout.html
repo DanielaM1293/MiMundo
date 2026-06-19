@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="{{ session.get('lang', 'es') }}" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Mundo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+</head>
+<body class="bg-[#FAFAF8] dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col md:flex-row">
+
+    <aside class="w-full md:w-64 bg-[#F5F3F0] dark:bg-gray-800 p-6 border-b md:border-r border-gray-200 dark:border-gray-700 flex flex-col transition-colors duration-300 shrink-0">
+        <h1 class="text-2xl font-bold text-[#9B8EA8] mb-10">Mi Mundo</h1>
+
+        {% if session.get("user_id") %}
+            <nav class="space-y-4 text-gray-600 dark:text-gray-300 flex-grow">
+                <a href="/" class="nav-link flex items-center gap-3 hover:text-[#9B8EA8] transition"> <span>{{ _('dashboard') }}</span></a>
+                <a href="/agenda" class="nav-link flex items-center gap-3 hover:text-[#9B8EA8] transition"> <span>{{ _('agenda') }}</span></a>
+                <a href="/kanban" class="nav-link flex items-center gap-3 hover:text-[#9B8EA8] transition"> <span>{{ _('kanban') }}</span></a>
+                <a href="/presupuesto" class="nav-link flex items-center gap-3 hover:text-[#9B8EA8] transition"> <span>{{ _('budget') }}</span></a>
+                <a href="/education" class="nav-link flex items-center gap-3 hover:text-[#9B8EA8] transition"> <span>{{ _('education') }}</span></a></a>
+            </nav>
+        {% endif %}
+
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-4">
+            <div class="flex gap-2">
+                <a href="/set_lang/es" class="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded text-sm hover:opacity-80">🇪🇸</a>
+                <a href="/set_lang/en" class="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded text-sm hover:opacity-80">🇺🇸</a>
+            </div>
+            <button onclick="toggleDarkMode()" class="text-left text-sm p-2 bg-gray-200 dark:bg-gray-600 rounded-lg transition hover:bg-gray-300 dark:hover:bg-gray-500">
+                🌓 {{ _('toggle_theme') }}
+            </button>
+
+            {% if session.get("user_id") %}
+                <a href="/logout" class="text-red-400 hover:text-red-600 text-sm transition">{{ _('logout') }}</a>
+            {% endif %}
+        </div>
+    </aside>
+
+   <main class="flex-1 p-4 md:p-8 overflow-x-hidden">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded
+                    {{ 'bg-red-100 text-red-700' if category == 'error'
+                    else 'bg-green-100 text-green-700' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div id="main-content" class="max-w-5xl mx-auto">
+        {% block main %}{% endblock %}
+    </div>
+
+</main>
+
+    <script>
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        }
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+
+    <script>
+    (function () {
+        const mainContent = document.getElementById('main-content');
+
+        // Los <script> insertados vía innerHTML no se ejecutan solos;
+        // los recreamos para que sí corran (formularios AJAX de cada sección, etc.)
+        function runScripts(container) {
+            container.querySelectorAll('script').forEach(oldScript => {
+                const newScript = document.createElement('script');
+                for (const attr of oldScript.attributes) {
+                    newScript.setAttribute(attr.name, attr.value);
+                }
+                newScript.textContent = oldScript.textContent;
+                oldScript.replaceWith(newScript);
+            });
+        }
+
+        function setActive(path) {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                const isActive = new URL(link.href).pathname === path;
+                link.classList.toggle('text-[#9B8EA8]', isActive);
+                link.classList.toggle('font-semibold', isActive);
+            });
+        }
+
+        async function loadSection(url, push) {
+            try {
+                const res = await fetch(url, { headers: { 'X-Partial-Request': '1' } });
+
+                // Si la sesión caducó y @login_required redirige a /login, navegamos normal
+                if (res.redirected) {
+                    window.location.href = res.url;
+                    return;
+                }
+                if (!res.ok) throw new Error('Respuesta no válida');
+
+                mainContent.innerHTML = await res.text();
+                runScripts(mainContent);
+
+                if (push) history.pushState({}, '', url);
+                setActive(new URL(url, window.location.origin).pathname);
+                window.scrollTo({ top: 0 });
+            } catch (err) {
+                window.location.href = url; // fallback si algo falla
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('.nav-link');
+            if (!link || e.metaKey || e.ctrlKey || link.target === '_blank') return;
+            const url = link.getAttribute('href');
+            if (window.location.pathname === url) return;
+            e.preventDefault();
+            loadSection(url, true);
+        });
+
+        window.addEventListener('popstate', () => loadSection(window.location.pathname, false));
+
+        setActive(window.location.pathname);
+    })();
+    </script>
+</body>
+</html>

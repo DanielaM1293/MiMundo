@@ -1,0 +1,183 @@
+{% extends layout if layout else 'layout.html' %}
+
+{% block main %}
+
+<h2 class="text-2xl font-bold text-[#9B8EA8] mb-6">
+    {{ _('agenda_title') }}
+</h2>
+
+<form id="agenda-form"
+      class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-8 border border-gray-200 dark:border-gray-700">
+
+    <div class="flex flex-col md:flex-row gap-4">
+
+        <input
+            type="text"
+            name="title"
+            placeholder="{{ _('placeholder_todo') }}"
+            class="border dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2 rounded flex-1"
+            required>
+
+        <select
+            name="type"
+            class="border dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2 rounded">
+
+            <option value="personal">{{ _('type_personal') }}</option>
+            <option value="estudio">{{ _('type_estudio') }}</option>
+            <option value="ejercicio">{{ _('type_ejercicio') }}</option>
+
+        </select>
+
+        <button
+            type="submit"
+            class="bg-[#9B8EA8] text-white px-4 py-2 rounded hover:bg-[#8A7D96] transition">
+
+            {{ _('btn_add') }}
+
+        </button>
+
+    </div>
+
+</form>
+
+<div id="activities-list" class="space-y-4">
+
+    {% if activities %}
+
+        {% for activity in activities %}
+
+        <div
+            class="activity-item bg-[#F5F3F0] dark:bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-200 dark:border-gray-700"
+            data-id="{{ activity.id }}">
+
+            <div class="flex flex-col">
+
+                <span class="text-gray-800 dark:text-gray-200">
+                    {{ activity.title }}
+                </span>
+
+                <span class="text-xs text-gray-500">
+                    {{ activity.type }}
+                </span>
+
+            </div>
+
+            <button
+                data-id="{{ activity.id }}"
+                class="btn-delete-activity text-red-400 hover:text-red-600">
+
+                🗑️
+
+            </button>
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p id="empty-msg" class="text-gray-500 italic">
+            {{ _('no_activities') }}
+        </p>
+
+    {% endif %}
+
+</div>
+
+<script>
+
+document.getElementById("agenda-form").addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    const form = e.target;
+
+    const response = await fetch("/agenda", {
+        method: "POST",
+        headers: {
+            "X-Requested-With": "XMLHttpRequest"
+        },
+        body: new FormData(form)
+    });
+
+    const data = await response.json();
+
+    if (!data.success) return;
+
+    document.getElementById("empty-msg")?.remove();
+
+    const activity = data.activity;
+
+    const html = `
+        <div
+            class="activity-item bg-[#F5F3F0] dark:bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-200 dark:border-gray-700"
+            data-id="${activity.id}">
+
+            <div class="flex flex-col">
+
+                <span class="text-gray-800 dark:text-gray-200">
+                    ${activity.title}
+                </span>
+
+                <span class="text-xs text-gray-500">
+                    ${activity.type}
+                </span>
+
+            </div>
+
+            <button
+                data-id="${activity.id}"
+                class="btn-delete-activity text-red-400 hover:text-red-600">
+
+                🗑️
+
+            </button>
+
+        </div>
+    `;
+
+    document
+        .getElementById("activities-list")
+        .insertAdjacentHTML("afterbegin", html);
+
+    form.reset();
+
+});
+
+document.getElementById("activities-list").addEventListener("click", async (e) => {
+
+    const btn = e.target.closest(".btn-delete-activity");
+
+    if (!btn) return;
+
+    const id = btn.dataset.id;
+
+    const response = await fetch(`/delete/activities/${id}`, {
+        headers: {
+            "X-Requested-With": "XMLHttpRequest"
+        }
+    });
+
+    const data = await response.json();
+
+    if (!data.success) return;
+
+    document
+        .querySelector(`[data-id="${id}"]`)
+        ?.remove();
+
+    if (!document.querySelector(".activity-item")) {
+
+        document.getElementById("activities-list").innerHTML = `
+            <p id="empty-msg" class="text-gray-500 italic">
+                {{ _('no_activities') }}
+            </p>
+        `;
+
+    }
+
+});
+
+</script>
+
+{% endblock %}

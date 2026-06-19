@@ -1,0 +1,104 @@
+{% extends layout if layout else 'layout.html' %}
+
+{% block main %}
+<h2 class="text-2xl font-bold text-[#9B8EA8] mb-6">{{ _('budget_title') }}</h2>
+
+<form id="presupuesto-form" class="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-sm mb-8 flex flex-col md:flex-row gap-4 border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+    <input name="description" placeholder="{{ _('placeholder_concept') }}" class="border dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2 rounded flex-1 w-full" required maxlength="50">
+    <input name="amount" type="number" step="0.01" min="0.01" placeholder="{{ _('placeholder_amount') }}" class="border dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2 rounded w-full md:w-32" required>
+    <select name="category" class="border dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2 rounded w-full md:w-40" required>
+        <option value="" disabled selected>{{ _('select_category') }}</option>
+        <option value="ingreso">{{ _('cat_ingreso') }}</option>
+        <option value="gasto">{{ _('cat_gasto') }}</option>
+    </select>
+    <button type="submit" class="bg-[#9B8EA8] text-white px-4 py-2 rounded hover:bg-[#8A7D96] transition w-full md:w-auto">{{ _('btn_register') }}</button>
+</form>
+
+<div class="mb-4">
+    <a href="/export"
+       class="inline-flex items-center gap-2 px-4 py-2 text-[#9B8EA8] hover:text-white hover:bg-[#9B8EA8] rounded-md border border-[#9B8EA8]/30 transition-all duration-300 font-medium text-sm shadow-sm hover:shadow-lg">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        {{ _('export') }}
+    </a>
+</div>
+
+<div class="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto transition-colors duration-300">
+    <table class="w-full text-left min-w-[300px]">
+        <thead>
+            <tr class="border-b dark:border-gray-700 text-[#9B8EA8]">
+                <th class="p-2 text-sm md:text-base">{{ _('placeholder_concept') }}</th>
+                <th class="p-2 text-sm md:text-base">{{ _('select_category') }}</th>
+                <th class="p-2 text-sm md:text-base">{{ _('placeholder_amount') }}</th>
+                <th class="p-2"></th>
+            </tr>
+        </thead>
+        <tbody id="finances-tbody" class="text-gray-800 dark:text-gray-300">
+            {% for item in finances %}
+            <tr data-id="{{ item.id }}" class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                <td class="p-2 text-sm md:text-base break-words max-w-[150px] md:max-w-none">{{ item.description }}</td>
+                <td class="p-2 text-sm md:text-base">{{ _('cat_' + item.category) }}</td>
+                <td class="p-2 text-sm md:text-base font-semibold {{ 'text-red-500 dark:text-red-400' if item.category == 'gasto' else 'text-green-500 dark:text-green-400' }}">
+                    {{ "${:,.2f}".format(item.amount|float) }}
+                </td>
+                <td class="p-2 text-right">
+                    <button data-id="{{ item.id }}" class="btn-delete-finance text-gray-400 hover:text-red-500 transition px-2" title="Eliminar">🗑️</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+const catLabels = {
+    ingreso: "{{ _('cat_ingreso') }}",
+    gasto:   "{{ _('cat_gasto') }}",
+};
+
+document.getElementById('presupuesto-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const res  = await fetch('/presupuesto', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: new FormData(form),
+    });
+    const data = await res.json();
+    if (!data.success) return;
+
+    const f     = data.finance;
+    const tbody = document.getElementById('finances-tbody');
+    const isGasto = f.category === 'gasto';
+
+    const row = document.createElement('tr');
+    row.dataset.id = f.id;
+    row.className  = 'border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
+    row.innerHTML  = `
+        <td class="p-2 text-sm md:text-base break-words max-w-[150px] md:max-w-none">${f.description}</td>
+        <td class="p-2 text-sm md:text-base">${catLabels[f.category] ?? f.category}</td>
+        <td class="p-2 text-sm md:text-base font-semibold ${isGasto ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'}">
+            $${parseFloat(f.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </td>
+        <td class="p-2 text-right">
+            <button data-id="${f.id}" class="btn-delete-finance text-gray-400 hover:text-red-500 transition px-2" title="Eliminar">🗑️</button>
+        </td>
+    `;
+    tbody.prepend(row);
+    form.reset();
+});
+
+document.getElementById('finances-tbody').addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-delete-finance');
+    if (!btn) return;
+    const id  = btn.dataset.id;
+    const res = await fetch(`/delete/finances/${id}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    const data = await res.json();
+    if (!data.success) return;
+    document.querySelector(`tr[data-id="${id}"]`)?.remove();
+});
+</script>
+{% endblock %}
