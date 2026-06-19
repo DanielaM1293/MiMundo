@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from translations import LANGS
 from datetime import datetime
 import os
+from cs50 import SQL
 
 # ... (tu código de importaciones arriba)
 
@@ -21,17 +22,21 @@ load_dotenv()
 app = Flask(__name__)
 # ... (resto de configuraciones)
 
-# Determinamos la ruta
+# ... después de las configuraciones de app ...
+
+# Ruta al archivo
 if os.environ.get("RENDER"):
-    db_path = os.path.join("/tmp", "mi_mundo.db")
+    # En Render, usamos /tmp/ para tener permisos de escritura
+    db_path = "/tmp/mi_mundo.db"
 else:
+    # En local, usamos la carpeta del proyecto
     db_path = os.path.join(os.path.dirname(__file__), "mi_mundo.db")
 
-# TRUCO: Crear el archivo si no existe para que CS50 no se queje
+# Crear el archivo si no existe (esto evita el error "does not exist")
 if not os.path.exists(db_path):
     open(db_path, 'a').close()
 
-# Ahora inicializamos
+# Inicializar la base de datos
 db = SQL(f"sqlite:///{db_path}")
 
 # Crear tablas
@@ -40,7 +45,7 @@ db.execute("""
         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         username TEXT NOT NULL,
         hash TEXT NOT NULL
-    )
+    );
 """)
 # ... agrega aquí el resto de tus CREATE TABLE ...
 #db = SQL("sqlite:///" + os.path.join(basedir, "mi_mundo.db"))
