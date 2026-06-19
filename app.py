@@ -21,8 +21,28 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.secret_key = os.urandom(24)
 Session(app)
+
+
 basedir = os.path.abspath(os.path.dirname(__file__))
-db = SQL("sqlite:///" + os.path.join(basedir, "mi_mundo.db"))
+
+if os.environ.get("RENDER"):
+    db_path = os.path.join("/tmp", "mi_mundo.db")
+else:
+    db_path = os.path.join(os.path.dirname(__file__), "mi_mundo.db")
+
+db = SQL(f"sqlite:///{db_path}")
+
+# Crear tablas si no existen (Ejemplo básico)
+db.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        username TEXT NOT NULL,
+        hash TEXT NOT NULL
+    )
+""")
+# ... agrega aquí el resto de tus CREATE TABLE ...
+#db = SQL("sqlite:///" + os.path.join(basedir, "mi_mundo.db"))
+
 # ── Funciones Helper (Deben ir antes de las rutas) ─────────────────────────────
 def is_ajax():
     return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
