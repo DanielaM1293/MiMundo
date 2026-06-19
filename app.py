@@ -12,6 +12,7 @@ from helpers import login_required
 from dotenv import load_dotenv
 from translations import LANGS
 from datetime import datetime
+import os
 
 # Configuración inicial
 load_dotenv()
@@ -20,8 +21,8 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.secret_key = os.urandom(24)
 Session(app)
-db = SQL("sqlite:///mi_mundo.db")
-
+basedir = os.path.abspath(os.path.dirname(__file__))
+db = SQL("sqlite:///" + os.path.join(basedir, "mi_mundo.db"))
 # ── Funciones Helper (Deben ir antes de las rutas) ─────────────────────────────
 def is_ajax():
     return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
