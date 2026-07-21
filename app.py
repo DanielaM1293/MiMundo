@@ -19,8 +19,11 @@ from cs50 import SQL
 
 # Configuración inicial
 load_dotenv()
+
 app = Flask(__name__)
-# ... (resto de configuraciones)
+
+app.config["SECRET_KEY"] = "mi-clave-super-secreta-123456"
+app.config["PROPAGATE_EXCEPTIONS"] = True
 
 # ... después de las configuraciones de app ...
 
@@ -38,7 +41,6 @@ if not os.path.exists(db_path):
 
 # Inicializar la base de datos
 db = SQL(f"sqlite:///{db_path}")
-
 # Crear TODAS las tablas necesarias
 # Inicializar la base de datos
 db = SQL(f"sqlite:///{db_path}")
