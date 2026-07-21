@@ -225,18 +225,79 @@ def kanban():
 @app.route("/presupuesto", methods=["GET", "POST"])
 @login_required
 def presupuesto():
+
     if request.method == "POST":
-        db.execute("INSERT INTO finances (user_id, description, amount, type, category) VALUES(?, ?, ?, ?, ?)",
-                   session["user_id"], request.form.get("description"), float(request.form.get("amount")),
-                   request.form.get("category"), request.form.get("category"))
-        if is_ajax():
-            fin = db.execute("SELECT * FROM finances WHERE user_id = ? ORDER BY id DESC LIMIT 1", session["user_id"])
-            all_f = db.execute("SELECT amount, category FROM finances WHERE user_id = ?", session["user_id"])
-            bal = sum(f['amount'] if f['category'] == 'ingreso' else -f['amount'] for f in all_f)
-            return jsonify({"success": True, "finance": dict(fin[0]), "balance": bal})
-        return redirect("/presupuesto")
-    finances = db.execute("SELECT * FROM finances WHERE user_id = ?", session["user_id"])
-    return render("presupuesto.html", finances=finances)
+
+        try:
+
+            db.execute(
+                """
+                INSERT INTO finances
+                (user_id, description, amount, type, category)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                session["user_id"],
+                request.form.get("description"),
+                float(request.form.get("amount")),
+                request.form.get("category"),   # type
+                request.form.get("category")    # category
+            )
+
+            if is_ajax():
+
+                fin = db.execute(
+                    """
+                    SELECT *
+                    FROM finances
+                    WHERE user_id = ?
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    session["user_id"]
+                )
+
+                all_f = db.execute(
+                    """
+                    SELECT amount, category
+                    FROM finances
+                    WHERE user_id = ?
+                    """,
+                    session["user_id"]
+                )
+
+                balance = sum(
+                    f["amount"] if f["category"] == "ingreso"
+                    else -f["amount"]
+                    for f in all_f
+                )
+
+                return jsonify({
+                    "success": True,
+                    "finance": dict(fin[0]),
+                    "balance": balance
+                })
+
+            return redirect("/presupuesto")
+
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            return jsonify({"success": False}), 500
+
+    finances = db.execute(
+        """
+        SELECT *
+        FROM finances
+        WHERE user_id = ?
+        ORDER BY id DESC
+        """,
+        session["user_id"]
+    )
+
+    return render(
+        "presupuesto.html",
+        finances=finances
+    )
 
 @app.route("/delete/<string:table>/<int:id>")
 @login_required
@@ -535,3 +596,6 @@ def edit_course(id):
         "edit_course.html",
         course=course[0]
     )
+
+if __name__ == "__main__":
+    app.run(debug=True)
