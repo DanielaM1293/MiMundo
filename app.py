@@ -99,7 +99,7 @@ def index():
 
     ingresos = db.execute(
         """
-        SELECT COALESCE(SUM(amount),0) AS total
+        SELECT COALESCE(SUM(amount), 0) AS total
         FROM finances
         WHERE user_id = ?
         AND category = 'ingreso'
@@ -109,7 +109,7 @@ def index():
 
     gastos = db.execute(
         """
-        SELECT COALESCE(SUM(amount),0) AS total
+        SELECT COALESCE(SUM(amount), 0) AS total
         FROM finances
         WHERE user_id = ?
         AND category = 'gasto'
@@ -153,10 +153,17 @@ def index():
     else:
         avg_progress = 0
 
+    # Verificar que el usuario exista
     user = db.execute(
         "SELECT username FROM users WHERE id = ?",
         session["user_id"]
-    )[0]
+    )
+
+    if not user:
+        session.clear()
+        return redirect("/login")
+
+    user = user[0]
 
     hour = datetime.now().hour
 
