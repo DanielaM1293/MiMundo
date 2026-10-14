@@ -1,58 +1,39 @@
+
 import os
 import csv
 import io
 import random
-import warnings
 from datetime import datetime
+
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, session, flash, make_response, jsonify
-from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from cs50 import SQL
-from helpers import login_required
-from dotenv import load_dotenv
-from translations import LANGS
-from datetime import datetime
-import os
-from cs50 import SQL
 
-# ... (tu código de importaciones arriba)
+from helpers import login_required
+from translations import LANGS
 
 # Configuración inicial
 load_dotenv()
 
 app = Flask(__name__)
-
-app.config["SECRET_KEY"] = "mi-clave-super-secreta-123456"
+app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 app.config["PROPAGATE_EXCEPTIONS"] = True
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
-# ... después de las configuraciones de app ...
+# Base de datos: la ruta viene de una variable de entorno (o local por defecto)
+db_path = os.environ.get("DATABASE_PATH", os.path.join(os.path.dirname(__file__), "mi_mundo.db"))
 
-# Ruta al archivo
-if os.environ.get("RENDER"):
-    # En Render, usamos /tmp/ para tener permisos de escritura
-    db_path = "/tmp/mi_mundo.db"
-else:
-    # En local, usamos la carpeta del proyecto
-    db_path = os.path.join(os.path.dirname(__file__), "mi_mundo.db")
-
-# Crear el archivo si no existe (esto evita el error "does not exist")
 if not os.path.exists(db_path):
-    open(db_path, 'a').close()
+    open(db_path, "a").close()
 
-# Inicializar la base de datos
-db = SQL(f"sqlite:///{db_path}")
-# Crear TODAS las tablas necesarias
-# Inicializar la base de datos
 db = SQL(f"sqlite:///{db_path}")
 
-# Crear tablas una por una (esto soluciona el error)
 db.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, username TEXT NOT NULL, hash TEXT NOT NULL)")
-db.execute("CREATE TABLE IF NOT EXISTS finances (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, description TEXT NOT NULL, amount REAL NOT NULL, category TEXT NOT NULL, date DATETIME DEFAULT CURRENT_TIMESTAMP)")
+db.execute("CREATE TABLE IF NOT EXISTS finances (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, description TEXT NOT NULL, amount REAL NOT NULL, type TEXT, category TEXT NOT NULL, date DATETIME DEFAULT CURRENT_TIMESTAMP)")
 db.execute("CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, title TEXT NOT NULL, type TEXT NOT NULL, status TEXT NOT NULL)")
 db.execute("CREATE TABLE IF NOT EXISTS education (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, name TEXT NOT NULL, total_classes INTEGER NOT NULL, completed_classes INTEGER NOT NULL)")
-# ... agrega aquí el resto de tus CREATE TABLE ...
-#db = SQL("sqlite:///" + os.path.join(basedir, "mi_mundo.db"))
-
 # ── Funciones Helper (Deben ir antes de las rutas) ─────────────────────────────
 def is_ajax():
     return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
