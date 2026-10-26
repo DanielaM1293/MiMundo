@@ -64,6 +64,27 @@ def parse_positive_float(value):
         return None
     return number
 
+def t(key):
+    """Texto traducido según el idioma de la sesión (español por defecto)."""
+    lang = session.get("lang", "es")
+    return LANGS.get(lang, LANGS["es"]).get(key, key)
+
+def get_course(course_id):
+    """Devuelve el curso del usuario actual, o None si no existe."""
+    rows = db.execute(
+        "SELECT * FROM education WHERE id = ? AND user_id = ?",
+        course_id, session["user_id"]
+    )
+    return rows[0] if rows else None
+
+def course_json(course):
+    """Respuesta AJAX con la tarjeta del curso ya dibujada."""
+    return jsonify({
+        "success": True,
+        "id": course["id"],
+        "html": render_template("_course_card.html", course=course)
+    })
+
 def render(template, **kwargs):
     # Si es parcial, usamos partial.html, si no, layout.html
     layout = "partial.html" if is_partial_request() else "layout.html"
@@ -524,10 +545,12 @@ def add_course():
     total_classes = parse_positive_int(request.form.get("total_classes"))
 
     if not name or total_classes is None:
-        flash("Escribe un nombre y un número de clases mayor que 0.", "error")
+        if is_ajax():
+            return jsonify({"success": False, "error": t("invalid_course")}), 400
+        flash(t("invalid_course"), "error")
         return redirect("/education")
 
-    db.execute(
+    course_id = db.execute(
         """
         INSERT INTO education
         (
@@ -542,6 +565,9 @@ def add_course():
         name,
         total_classes
     )
+
+    if is_ajax():
+        return course_json(get_course(course_id))
 
     return redirect("/education")
 
@@ -561,6 +587,12 @@ def increase_course(id):
         session["user_id"]
     )
 
+    if is_ajax():
+        course = get_course(id)
+        if not course:
+            return jsonify({"success": False, "error": t("error_generic")}), 404
+        return course_json(course)
+
     return redirect("/education")
 @app.route("/course/decrease/<int:id>", methods=["POST"])
 @login_required
@@ -577,6 +609,12 @@ def decrease_course(id):
         id,
         session["user_id"]
     )
+
+    if is_ajax():
+        course = get_course(id)
+        if not course:
+            return jsonify({"success": False, "error": t("error_generic")}), 404
+        return course_json(course)
 
     return redirect("/education")
 
@@ -595,6 +633,9 @@ def delete_course(id):
         session["user_id"]
     )
 
+    if is_ajax():
+        return jsonify({"success": True})
+
     return redirect("/education")
 
 @app.route("/course/edit/<int:id>", methods=["GET", "POST"])
@@ -607,7 +648,7 @@ def edit_course(id):
         total_classes = parse_positive_int(request.form.get("total_classes"))
 
         if not name or total_classes is None:
-            flash("Escribe un nombre y un número de clases mayor que 0.", "error")
+            flash(t("invalid_course"), "error")
             return redirect(f"/course/edit/{id}")
 
         db.execute(
