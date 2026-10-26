@@ -84,9 +84,16 @@ LANGS = {
         'btn_login': 'Iniciar sesión',
         'register_title': 'Registrarse',
         'no_account' : '¿Sin cuenta?',
-        'register_link': 'Registrarse ',
-        'placeholder_user': 'user ',
-        'placeholder_pass': 'contraseña ',
+        'register_link': 'Registrarse',
+        'have_account': '¿Ya tienes cuenta?',
+        'login_link': 'Inicia sesión',
+        'placeholder_user': 'Usuario',
+        'placeholder_pass': 'Contraseña',
+
+        # Mensajes de Formación (cursos)
+        'completed_badge': 'Completado',
+        'invalid_course': 'Escribe un nombre y un número de clases mayor que 0.',
+        'error_generic': 'Algo salió mal. Inténtalo de nuevo.',
 
         # Frases
         'daily_quote': 'Frase del día',
@@ -177,9 +184,16 @@ LANGS = {
         'btn_login': 'Login',
         'register_title': 'Register',
         'no_account' : 'No account?',
-        'register_link': 'Register Link ',
-        'placeholder_user': 'username ',
-        'placeholder_pass': 'password ',
+        'register_link': 'Register',
+        'have_account': 'Already have an account?',
+        'login_link': 'Log in',
+        'placeholder_user': 'Username',
+        'placeholder_pass': 'Password',
+
+        # Education (courses) messages
+        'completed_badge': 'Completed',
+        'invalid_course': 'Enter a name and a number of classes greater than 0.',
+        'error_generic': 'Something went wrong. Please try again.',
 
 
 
