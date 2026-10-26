@@ -1,4 +1,3 @@
-
 import os
 import csv
 import io
@@ -34,12 +33,36 @@ db.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREME
 db.execute("CREATE TABLE IF NOT EXISTS finances (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, description TEXT NOT NULL, amount REAL NOT NULL, type TEXT, category TEXT NOT NULL, date DATETIME DEFAULT CURRENT_TIMESTAMP)")
 db.execute("CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, title TEXT NOT NULL, type TEXT NOT NULL, status TEXT NOT NULL)")
 db.execute("CREATE TABLE IF NOT EXISTS education (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, name TEXT NOT NULL, total_classes INTEGER NOT NULL, completed_classes INTEGER NOT NULL)")
+# Repara cursos con datos inválidos guardados antes de agregar las validaciones
+db.execute("UPDATE education SET total_classes = 1 WHERE typeof(total_classes) != 'integer' OR total_classes < 1")
+db.execute("UPDATE education SET completed_classes = 0 WHERE typeof(completed_classes) != 'integer' OR completed_classes < 0")
+db.execute("UPDATE education SET completed_classes = total_classes WHERE completed_classes > total_classes")
+
 # ── Funciones Helper (Deben ir antes de las rutas) ─────────────────────────────
 def is_ajax():
     return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
 def is_partial_request():
     return request.headers.get('X-Partial-Request') == '1'
+
+def parse_positive_int(value):
+    """Devuelve un entero mayor que 0, o None si el valor no es válido."""
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number > 0 else None
+
+def parse_positive_float(value):
+    """Devuelve un número mayor que 0, o None si el valor no es válido."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    # number != number detecta NaN; el límite evita valores absurdos
+    if number != number or number <= 0 or number > 1_000_000_000_000:
+        return None
+    return number
 
 def render(template, **kwargs):
     # Si es parcial, usamos partial.html, si no, layout.html
@@ -126,11 +149,20 @@ def index():
 
     total_courses = len(courses)
 
-    if total_courses > 0:
+    # Ignora cursos con datos inválidos (por ejemplo 0 clases) para no romper el dashboard
+    valid_courses = []
+    for c in courses:
+        try:
+            if int(c["total_classes"]) > 0:
+                valid_courses.append(c)
+        except (TypeError, ValueError):
+            continue
+
+    if valid_courses:
         avg_progress = sum(
-            (c["completed_classes"] * 100) / c["total_classes"]
-            for c in courses
-        ) / total_courses
+            (int(c["completed_classes"]) * 100) / int(c["total_classes"])
+            for c in valid_courses
+        ) / len(valid_courses)
     else:
         avg_progress = 0
 
@@ -216,6 +248,20 @@ def presupuesto():
 
     if request.method == "POST":
 
+        description = (request.form.get("description") or "").strip()
+        amount = parse_positive_float(request.form.get("amount"))
+        category = request.form.get("category")
+
+        # Validación: descripción obligatoria, monto > 0 y categoría válida
+        if not description or amount is None or category not in ("ingreso", "gasto"):
+            if is_ajax():
+                return jsonify({
+                    "success": False,
+                    "error": "Datos inválidos: revisa la descripción, el monto y la categoría."
+                }), 400
+            flash("Datos inválidos: revisa la descripción, el monto y la categoría.", "error")
+            return redirect("/presupuesto")
+
         try:
 
             db.execute(
@@ -225,10 +271,10 @@ def presupuesto():
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 session["user_id"],
-                request.form.get("description"),
-                float(request.form.get("amount")),
-                request.form.get("category"),   # type
-                request.form.get("category")    # category
+                description,
+                amount,
+                category,   # type
+                category    # category
             )
 
             if is_ajax():
@@ -474,6 +520,13 @@ def education():
 @login_required
 def add_course():
 
+    name = (request.form.get("name") or "").strip()
+    total_classes = parse_positive_int(request.form.get("total_classes"))
+
+    if not name or total_classes is None:
+        flash("Escribe un nombre y un número de clases mayor que 0.", "error")
+        return redirect("/education")
+
     db.execute(
         """
         INSERT INTO education
@@ -486,8 +539,8 @@ def add_course():
         VALUES (?, ?, ?, 0)
         """,
         session["user_id"],
-        request.form.get("name"),
-        request.form.get("total_classes")
+        name,
+        total_classes
     )
 
     return redirect("/education")
@@ -550,16 +603,25 @@ def edit_course(id):
 
     if request.method == "POST":
 
+        name = (request.form.get("name") or "").strip()
+        total_classes = parse_positive_int(request.form.get("total_classes"))
+
+        if not name or total_classes is None:
+            flash("Escribe un nombre y un número de clases mayor que 0.", "error")
+            return redirect(f"/course/edit/{id}")
+
         db.execute(
             """
             UPDATE education
             SET name = ?,
-                total_classes = ?
+                total_classes = ?,
+                completed_classes = MIN(completed_classes, ?)
             WHERE id = ?
             AND user_id = ?
             """,
-            request.form.get("name"),
-            request.form.get("total_classes"),
+            name,
+            total_classes,
+            total_classes,
             id,
             session["user_id"]
         )
