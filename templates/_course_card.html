@@ -1,0 +1,71 @@
+{# Tarjeta de un curso. La usan education.html y las respuestas AJAX del servidor. #}
+{% set total = course.total_classes|int %}
+{% set done = course.completed_classes|int %}
+{% set progress = ((done * 100) / total)|round|int if total > 0 else 0 %}
+
+<div class="course-card bg-white dark:bg-gray-800 p-6 rounded-xl shadow mb-4 border border-gray-200 dark:border-gray-700"
+     data-course-id="{{ course.id }}"
+     data-course-name="{{ course.name }}">
+
+    <div class="flex justify-between items-center mb-3 gap-3">
+
+        <div class="flex items-center gap-2 min-w-0">
+            <h3 class="font-bold text-lg text-gray-800 dark:text-white break-words">
+                {{ course.name }}
+            </h3>
+
+            {% if progress == 100 %}
+            <span class="text-green-500 font-bold text-sm whitespace-nowrap">
+                ✓ {{ _('completed_badge') }}
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="flex gap-2 items-center shrink-0">
+
+            <a href="/course/edit/{{ course.id }}"
+               class="nav-link bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
+               title="{{ _('edit_course') }}">
+                ✏️
+            </a>
+
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+                {{ done }}/{{ total }}
+            </span>
+
+        </div>
+
+    </div>
+
+    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+        <div class="progress-bar bg-[#9B8EA8] h-3 rounded-full transition-all duration-500"
+             data-progress="{{ progress }}"
+             style="width: {{ progress }}%;">
+        </div>
+    </div>
+
+    <p class="mt-2 text-sm font-semibold text-[#9B8EA8]">
+        {{ progress }}%
+    </p>
+
+    <div class="flex gap-2 mt-4">
+
+        <button type="button" data-action="decrease"
+                class="bg-gray-200 dark:bg-gray-600 px-3 py-1 rounded hover:opacity-80 transition disabled:opacity-50">
+            ➖
+        </button>
+
+        <button type="button" data-action="increase"
+                class="bg-[#9B8EA8] text-white px-3 py-1 rounded hover:bg-[#8A7D96] transition disabled:opacity-50">
+            ➕
+        </button>
+
+        <button type="button" data-action="delete"
+                title="{{ _('delete') }}"
+                class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition disabled:opacity-50">
+            🗑️
+        </button>
+
+    </div>
+
+</div>
