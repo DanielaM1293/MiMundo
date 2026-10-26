@@ -91,8 +91,8 @@ The application uses SQLite with the following main tables:
 Clone the repository:
 
 ```bash
-git clone https://github.com/Daniela1293/cs50x-portfolio
-cd mi-mundo
+git clone https://github.com/DanielaM1293/MiMundo.git
+cd MiMundo
 ```
 
 Create and activate a virtual environment:
@@ -113,11 +113,48 @@ Install the required dependencies:
 pip install -r requirements.txt
 ```
 
+Create a file named `.env` in the project folder with a secret key (the app will not start without it):
+
+```
+SECRET_KEY=put-a-long-random-text-here
+```
+
+You can generate a random key with:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
 Run the application:
 
 ```bash
 flask run
 ```
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `SECRET_KEY` | Yes | Secret key used to sign user sessions. Never commit it to GitHub. |
+| `DATABASE_PATH` | No | Path of the SQLite file. Defaults to `mi_mundo.db` inside the project folder. |
+
+---
+
+## Deployment (Render)
+
+The app is deployed on [Render](https://render.com) as a Web Service:
+
+1. Create a new **Web Service** and connect this GitHub repository.
+2. Build Command: `pip install -r requirements.txt`
+3. Start Command: `gunicorn app:app`
+4. In the **Environment** tab, add the variable `SECRET_KEY` with your own random value.
+5. Save and deploy.
+
+Live app: https://mimundo-y5rd.onrender.com
+
+> Note: on Render's free plan the app goes to sleep when it is not used (the first visit can take about a minute) and the SQLite database is erased on every restart or new deploy. For permanent data, use a persistent disk or an external database.
 
 ---
 
