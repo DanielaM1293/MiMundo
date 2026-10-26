@@ -10,6 +10,8 @@
       data-error-msg="{{ _('error_generic') }}"
       class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow mb-8 border border-gray-200 dark:border-gray-700">
 
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
     <div class="grid md:grid-cols-2 gap-4">
 
         <input
