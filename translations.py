@@ -95,6 +95,27 @@ LANGS = {
         'invalid_course': 'Escribe un nombre y un número de clases mayor que 0.',
         'error_generic': 'Algo salió mal. Inténtalo de nuevo.',
 
+        # Mensajes de sesión y registro
+        'login_error': 'Usuario o contraseña incorrectos.',
+        'register_empty': 'Completa todos los campos.',
+        'register_long': 'El usuario puede tener máximo 20 caracteres.',
+        'register_short': 'La contraseña debe tener al menos 8 caracteres.',
+        'register_exists': 'Ese nombre de usuario ya existe.',
+        'register_ok': 'Cuenta creada con éxito. Ya puedes iniciar sesión.',
+
+        # Validaciones y errores
+        'invalid_activity': 'Escribe un título (máximo 100 caracteres) y elige un tipo válido.',
+        'invalid_finance': 'Revisa los datos: concepto (máximo 50 caracteres), monto mayor que 0 y categoría.',
+        'error_bad_request': 'La solicitud no es válida o la sesión expiró. Recarga la página e inténtalo de nuevo.',
+        'error_not_found': 'No encontramos esa página.',
+        'error_not_allowed': 'Esta acción no está permitida.',
+        'error_server': 'Ocurrió un error en el servidor. Inténtalo de nuevo en un momento.',
+        'back_home': '← Volver al inicio',
+
+        # Agenda
+        'mark_done': 'Marcar como completada',
+        'mark_pending': 'Marcar como pendiente',
+
         # Frases
         'daily_quote': 'Frase del día',
         'quotes': [
@@ -194,6 +215,27 @@ LANGS = {
         'completed_badge': 'Completed',
         'invalid_course': 'Enter a name and a number of classes greater than 0.',
         'error_generic': 'Something went wrong. Please try again.',
+
+        # Session and registration messages
+        'login_error': 'Incorrect username or password.',
+        'register_empty': 'Please fill in all fields.',
+        'register_long': 'The username can have at most 20 characters.',
+        'register_short': 'The password must be at least 8 characters long.',
+        'register_exists': 'That username already exists.',
+        'register_ok': 'Account created successfully. You can now log in.',
+
+        # Validation and errors
+        'invalid_activity': 'Enter a title (up to 100 characters) and choose a valid type.',
+        'invalid_finance': 'Check the data: concept (up to 50 characters), amount greater than 0 and category.',
+        'error_bad_request': 'The request is not valid or the session expired. Reload the page and try again.',
+        'error_not_found': "We couldn't find that page.",
+        'error_not_allowed': 'This action is not allowed.',
+        'error_server': 'A server error occurred. Please try again in a moment.',
+        'back_home': '← Back to home',
+
+        # Schedule
+        'mark_done': 'Mark as completed',
+        'mark_pending': 'Mark as pending',
 
 
 
