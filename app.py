@@ -124,7 +124,14 @@ def get_csrf_token():
 
 @app.before_request
 def check_csrf():
-    """Todo POST debe traer el token secreto de la sesión."""
+    """Todo POST debe traer el token secreto de la sesión.
+
+    /login y /register quedan fuera: todavía no hay una sesión que proteger y así
+    nadie se queda sin poder entrar (por ejemplo, con una página vieja en caché).
+    """
+    if request.endpoint in ("login", "register"):
+        return
+
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         expected = session.get("csrf_token", "")
         sent = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token") or ""
