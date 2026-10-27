@@ -4,6 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Mundo</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        // Protección CSRF: añade automáticamente el token secreto a todo envío (POST) hecho con fetch
+        (function () {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            const token = meta ? meta.content : '';
+            const originalFetch = window.fetch;
+            if (!originalFetch) return;
+            window.fetch = function (input, init) {
+                init = init || {};
+                const method = String(init.method || 'GET').toUpperCase();
+                if (token && method !== 'GET' && method !== 'HEAD') {
+                    let headers = init.headers;
+                    if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+                        headers = new Headers(headers);
+                        if (!headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token);
+                    } else {
+                        headers = Object.assign({}, headers || {});
+                        if (!('X-CSRF-Token' in headers)) headers['X-CSRF-Token'] = token;
+                    }
+                    init = Object.assign({}, init, { headers: headers });
+                }
+                return originalFetch.call(this, input, init);
+            };
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -20,7 +46,7 @@
                 <a href="/agenda" class="nav-link flex items-center gap-3 hover:text-[#9B8EA8] transition"> <span>{{ _('agenda') }}</span></a>
                 <a href="/kanban" class="nav-link flex items-center gap-3 hover:text-[#9B8EA8] transition"> <span>{{ _('kanban') }}</span></a>
                 <a href="/presupuesto" class="nav-link flex items-center gap-3 hover:text-[#9B8EA8] transition"> <span>{{ _('budget') }}</span></a>
-                <a href="/education" class="nav-link flex items-center gap-3 hover:text-[#9B8EA8] transition"> <span>{{ _('education') }}</span></a></a>
+                <a href="/education" class="nav-link flex items-center gap-3 hover:text-[#9B8EA8] transition"> <span>{{ _('education') }}</span></a>
             </nav>
         {% endif %}
 

@@ -6,14 +6,18 @@
     {{ _('agenda_title') }}
 </h2>
 
-<form id="agenda-form"
+<form id="agenda-form" action="/agenda" method="post"
+      data-error-msg="{{ _('error_generic') }}"
       class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-8 border border-gray-200 dark:border-gray-700">
+
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <div class="flex flex-col md:flex-row gap-4">
 
         <input
             type="text"
             name="title"
+            maxlength="100"
             placeholder="{{ _('placeholder_todo') }}"
             class="border dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2 rounded flex-1"
             required>
@@ -30,7 +34,7 @@
 
         <button
             type="submit"
-            class="bg-[#9B8EA8] text-white px-4 py-2 rounded hover:bg-[#8A7D96] transition">
+            class="bg-[#9B8EA8] text-white px-4 py-2 rounded hover:bg-[#8A7D96] transition disabled:opacity-50">
 
             {{ _('btn_add') }}
 
@@ -38,146 +42,135 @@
 
     </div>
 
+    <p id="agenda-error" class="hidden mt-3 p-3 rounded bg-red-100 text-red-700 text-sm"></p>
+
 </form>
 
 <div id="activities-list" class="space-y-4">
-
-    {% if activities %}
-
-        {% for activity in activities %}
-
-        <div
-            class="activity-item bg-[#F5F3F0] dark:bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-200 dark:border-gray-700"
-            data-id="{{ activity.id }}">
-
-            <div class="flex flex-col">
-
-                <span class="text-gray-800 dark:text-gray-200">
-                    {{ activity.title }}
-                </span>
-
-                <span class="text-xs text-gray-500">
-                    {{ activity.type }}
-                </span>
-
-            </div>
-
-            <button
-                data-id="{{ activity.id }}"
-                class="btn-delete-activity text-red-400 hover:text-red-600">
-
-                🗑️
-
-            </button>
-
-        </div>
-
-        {% endfor %}
-
-    {% else %}
-
-        <p id="empty-msg" class="text-gray-500 italic">
-            {{ _('no_activities') }}
-        </p>
-
-    {% endif %}
-
+    {% for activity in activities %}
+        {% include "_activity_card.html" %}
+    {% endfor %}
 </div>
 
+<p id="empty-msg" class="{% if activities %}hidden {% endif %}text-gray-500 italic">
+    {{ _('no_activities') }}
+</p>
+
 <script>
+// Todo va dentro de una función para que, si visitas esta sección varias veces
+// sin recargar, el código no se declare dos veces y siga funcionando.
+(function () {
+    const form = document.getElementById('agenda-form');
+    const list = document.getElementById('activities-list');
+    const emptyMsg = document.getElementById('empty-msg');
+    const errorBox = document.getElementById('agenda-error');
+    const genericError = form.dataset.errorMsg;
 
-document.getElementById("agenda-form").addEventListener("submit", async (e) => {
+    async function post(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: body
+        });
 
-    e.preventDefault();
+        // Si la sesión caducó, el servidor redirige al login
+        if (res.redirected) {
+            window.location.href = res.url;
+            return null;
+        }
 
-    const form = e.target;
+        try {
+            return await res.json();
+        } catch (err) {
+            return null;
+        }
+    }
 
-    const response = await fetch("/agenda", {
-        method: "POST",
-        headers: {
-            "X-Requested-With": "XMLHttpRequest"
-        },
-        body: new FormData(form)
-    });
+    function cardFromHtml(html) {
+        const tpl = document.createElement('template');
+        tpl.innerHTML = html.trim();
+        return tpl.content.firstElementChild;
+    }
 
-    const data = await response.json();
+    function showError(message) {
+        errorBox.textContent = message;
+        errorBox.classList.remove('hidden');
+    }
 
-    if (!data.success) return;
+    function hideError() {
+        errorBox.classList.add('hidden');
+        errorBox.textContent = '';
+    }
 
-    document.getElementById("empty-msg")?.remove();
+    function updateEmptyState() {
+        const hasItems = list.querySelector('.activity-item') !== null;
+        emptyMsg.classList.toggle('hidden', hasItems);
+    }
 
-    const activity = data.activity;
+    // ── Agregar actividad (sin recargar) ────────────────────────
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideError();
 
-    const html = `
-        <div
-            class="activity-item bg-[#F5F3F0] dark:bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-200 dark:border-gray-700"
-            data-id="${activity.id}">
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
 
-            <div class="flex flex-col">
-
-                <span class="text-gray-800 dark:text-gray-200">
-                    ${activity.title}
-                </span>
-
-                <span class="text-xs text-gray-500">
-                    ${activity.type}
-                </span>
-
-            </div>
-
-            <button
-                data-id="${activity.id}"
-                class="btn-delete-activity text-red-400 hover:text-red-600">
-
-                🗑️
-
-            </button>
-
-        </div>
-    `;
-
-    document
-        .getElementById("activities-list")
-        .insertAdjacentHTML("afterbegin", html);
-
-    form.reset();
-
-});
-
-document.getElementById("activities-list").addEventListener("click", async (e) => {
-
-    const btn = e.target.closest(".btn-delete-activity");
-
-    if (!btn) return;
-
-    const id = btn.dataset.id;
-
-    const response = await fetch(`/delete/activities/${id}`, {
-        headers: {
-            "X-Requested-With": "XMLHttpRequest"
+        try {
+            const data = await post('/agenda', new FormData(form));
+            if (data && data.success) {
+                list.prepend(cardFromHtml(data.html));
+                form.reset();
+                updateEmptyState();
+            } else if (data) {
+                showError(data.error || genericError);
+            }
+        } catch (err) {
+            showError(genericError);
+        } finally {
+            submitBtn.disabled = false;
         }
     });
 
-    const data = await response.json();
+    // ── Completar / reabrir y eliminar ──────────────────────────
+    list.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
 
-    if (!data.success) return;
+        const card = btn.closest('.activity-item');
+        if (!card) return;
 
-    document
-        .querySelector(`[data-id="${id}"]`)
-        ?.remove();
+        const id = card.dataset.id;
+        hideError();
+        btn.disabled = true;
 
-    if (!document.querySelector(".activity-item")) {
+        try {
+            if (btn.dataset.action === 'toggle') {
+                const body = new FormData();
+                body.append('id', id);
+                body.append('status', btn.dataset.nextStatus);
 
-        document.getElementById("activities-list").innerHTML = `
-            <p id="empty-msg" class="text-gray-500 italic">
-                {{ _('no_activities') }}
-            </p>
-        `;
-
-    }
-
-});
-
+                const data = await post('/update_activity', body);
+                if (data && data.success && data.html) {
+                    card.replaceWith(cardFromHtml(data.html));
+                } else if (data) {
+                    showError(data.error || genericError);
+                }
+            } else if (btn.dataset.action === 'delete') {
+                const data = await post('/delete/activities/' + id, new FormData());
+                if (data && data.success) {
+                    card.remove();
+                    updateEmptyState();
+                } else if (data) {
+                    showError(data.error || genericError);
+                }
+            }
+        } catch (err) {
+            showError(genericError);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+})();
 </script>
 
 {% endblock %}

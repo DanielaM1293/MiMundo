@@ -3,7 +3,10 @@
 {% block main %}
 <h2 class="text-2xl font-bold text-[#9B8EA8] mb-6">{{ _('budget_title') }}</h2>
 
-<form id="presupuesto-form" class="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-sm mb-8 flex flex-col md:flex-row gap-4 border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+<form id="presupuesto-form" action="/presupuesto" method="post"
+      data-error-msg="{{ _('error_generic') }}"
+      class="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-sm mb-4 flex flex-col md:flex-row gap-4 border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input name="description" placeholder="{{ _('placeholder_concept') }}" class="border dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2 rounded flex-1 w-full" required maxlength="50">
     <input name="amount" type="number" step="0.01" min="0.01" placeholder="{{ _('placeholder_amount') }}" class="border dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2 rounded w-full md:w-32" required>
     <select name="category" class="border dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2 rounded w-full md:w-40" required>
@@ -11,8 +14,10 @@
         <option value="ingreso">{{ _('cat_ingreso') }}</option>
         <option value="gasto">{{ _('cat_gasto') }}</option>
     </select>
-    <button type="submit" class="bg-[#9B8EA8] text-white px-4 py-2 rounded hover:bg-[#8A7D96] transition w-full md:w-auto">{{ _('btn_register') }}</button>
+    <button type="submit" class="bg-[#9B8EA8] text-white px-4 py-2 rounded hover:bg-[#8A7D96] transition w-full md:w-auto disabled:opacity-50">{{ _('btn_register') }}</button>
 </form>
+
+<p id="finance-error" class="hidden mb-4 p-3 rounded bg-red-100 text-red-700 text-sm"></p>
 
 <div class="mb-4">
     <a href="/export"
@@ -43,7 +48,7 @@
                     {{ "${:,.2f}".format(item.amount|float) }}
                 </td>
                 <td class="p-2 text-right">
-                    <button data-id="{{ item.id }}" class="btn-delete-finance text-gray-400 hover:text-red-500 transition px-2" title="Eliminar">🗑️</button>
+                    <button data-id="{{ item.id }}" class="btn-delete-finance text-gray-400 hover:text-red-500 transition px-2" title="{{ _('delete') }}">🗑️</button>
                 </td>
             </tr>
             {% endfor %}
@@ -52,53 +57,124 @@
 </div>
 
 <script>
-const catLabels = {
-    ingreso: "{{ _('cat_ingreso') }}",
-    gasto:   "{{ _('cat_gasto') }}",
-};
-
-document.getElementById('presupuesto-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const res  = await fetch('/presupuesto', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: new FormData(form),
-    });
-    const data = await res.json();
-    if (!data.success) return;
-
-    const f     = data.finance;
+// Todo va dentro de una función para que, si visitas esta sección varias veces
+// sin recargar, el código no se declare dos veces y siga funcionando.
+(function () {
+    const form = document.getElementById('presupuesto-form');
     const tbody = document.getElementById('finances-tbody');
-    const isGasto = f.category === 'gasto';
+    const errorBox = document.getElementById('finance-error');
+    const genericError = form.dataset.errorMsg;
 
-    const row = document.createElement('tr');
-    row.dataset.id = f.id;
-    row.className  = 'border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
-    row.innerHTML  = `
-        <td class="p-2 text-sm md:text-base break-words max-w-[150px] md:max-w-none">${f.description}</td>
-        <td class="p-2 text-sm md:text-base">${catLabels[f.category] ?? f.category}</td>
-        <td class="p-2 text-sm md:text-base font-semibold ${isGasto ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'}">
-            $${parseFloat(f.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </td>
-        <td class="p-2 text-right">
-            <button data-id="${f.id}" class="btn-delete-finance text-gray-400 hover:text-red-500 transition px-2" title="Eliminar">🗑️</button>
-        </td>
-    `;
-    tbody.prepend(row);
-    form.reset();
-});
+    const catLabels = {
+        ingreso: "{{ _('cat_ingreso') }}",
+        gasto:   "{{ _('cat_gasto') }}"
+    };
+    const deleteLabel = "{{ _('delete') }}";
 
-document.getElementById('finances-tbody').addEventListener('click', async (e) => {
-    const btn = e.target.closest('.btn-delete-finance');
-    if (!btn) return;
-    const id  = btn.dataset.id;
-    const res = await fetch(`/delete/finances/${id}`, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    // Evita que un texto escrito por el usuario se interprete como HTML
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    async function post(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: body
+        });
+
+        // Si la sesión caducó, el servidor redirige al login
+        if (res.redirected) {
+            window.location.href = res.url;
+            return null;
+        }
+
+        try {
+            return await res.json();
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function showError(message) {
+        errorBox.textContent = message;
+        errorBox.classList.remove('hidden');
+    }
+
+    function hideError() {
+        errorBox.classList.add('hidden');
+        errorBox.textContent = '';
+    }
+
+    // ── Agregar movimiento (sin recargar) ───────────────────────
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideError();
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+
+        try {
+            const data = await post('/presupuesto', new FormData(form));
+            if (!data) return;
+
+            if (!data.success) {
+                showError(data.error || genericError);
+                return;
+            }
+
+            const f = data.finance;
+            const isGasto = f.category === 'gasto';
+            const amount = parseFloat(f.amount).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            const row = document.createElement('tr');
+            row.dataset.id = f.id;
+            row.className = 'border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition';
+            row.innerHTML = `
+                <td class="p-2 text-sm md:text-base break-words max-w-[150px] md:max-w-none">${escapeHtml(f.description)}</td>
+                <td class="p-2 text-sm md:text-base">${escapeHtml(catLabels[f.category] || f.category)}</td>
+                <td class="p-2 text-sm md:text-base font-semibold ${isGasto ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'}">
+                    $${amount}
+                </td>
+                <td class="p-2 text-right">
+                    <button data-id="${Number(f.id)}" class="btn-delete-finance text-gray-400 hover:text-red-500 transition px-2" title="${escapeHtml(deleteLabel)}">🗑️</button>
+                </td>
+            `;
+            tbody.prepend(row);
+            form.reset();
+        } catch (err) {
+            showError(genericError);
+        } finally {
+            submitBtn.disabled = false;
+        }
     });
-    const data = await res.json();
-    if (!data.success) return;
-    document.querySelector(`tr[data-id="${id}"]`)?.remove();
-});
+
+    // ── Eliminar movimiento ─────────────────────────────────────
+    tbody.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.btn-delete-finance');
+        if (!btn) return;
+
+        hideError();
+        btn.disabled = true;
+
+        try {
+            const data = await post('/delete/finances/' + btn.dataset.id, new FormData());
+            if (data && data.success) {
+                btn.closest('tr').remove();
+            } else if (data) {
+                showError(data.error || genericError);
+            }
+        } catch (err) {
+            showError(genericError);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+})();
 </script>
 {% endblock %}

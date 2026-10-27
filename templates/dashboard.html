@@ -181,103 +181,89 @@
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Los datos van en un bloque seguro; el código los lee desde aquí -->
+<div id="dashboard-data" class="hidden"
+     data-income-label="{{ _('income') }}"
+     data-expenses-label="{{ _('expenses') }}"
+     data-savings-label="{{ _('savings') }}"
+     data-income="{{ ingresos|default(0)|float }}"
+     data-expenses="{{ gastos|default(0)|float }}"
+     data-savings="{{ ahorro|default(0)|float }}"></div>
 
-
-<!-- ChartJS -->
 <script>
+// Todo va dentro de una función que se ejecuta de inmediato. Así funciona igual cuando
+// llegas con una carga completa que cuando entras desde el menú lateral
+// (en ese caso "DOMContentLoaded" ya pasó y nunca se volvería a disparar).
+(function () {
 
-function animateCounter(id, prefix = "", suffix = "", decimals = 0) {
+    function animateCounter(id, prefix, suffix, decimals) {
+        prefix = prefix || "";
+        suffix = suffix || "";
+        decimals = decimals || 0;
 
-    const element = document.getElementById(id);
+        const element = document.getElementById(id);
+        if (!element) return;
 
-    if (!element) return;
+        const target = Number(element.dataset.value) || 0;
+        let current = 0;
 
-    const target = Number(element.dataset.value);
-    let current = 0;
+        const duration = 1200;
+        const increment = target / (duration / 16);
 
-    const duration = 1200;
-    const increment = target / (duration / 16);
+        function update() {
+            current += increment;
 
-    function update() {
+            if (current >= target) {
+                current = target;
+            } else {
+                requestAnimationFrame(update);
+            }
 
-        current += increment;
-
-        if (current >= target) {
-            current = target;
-        } else {
-            requestAnimationFrame(update);
+            element.textContent =
+                prefix +
+                current.toLocaleString(undefined, {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals
+                }) +
+                suffix;
         }
 
-        element.textContent =
-            prefix +
-            current.toLocaleString(undefined, {
-                minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals
-            }) +
-            suffix;
-
+        update();
     }
 
-    update();
+    function drawChart() {
+        const canvas = document.getElementById("financeChart");
+        const info = document.getElementById("dashboard-data");
+        if (!canvas || !info || typeof Chart === "undefined") return;
 
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    const canvas = document.getElementById("financeChart");
-
-    if (canvas) {
+        const isDark = document.documentElement.classList.contains("dark");
+        const tickColor = isDark ? "#D1D5DB" : "#6B7280";
 
         new Chart(canvas, {
-
             type: "bar",
-
             data: {
-
                 labels: [
-                    "{{ _('income') }}",
-                    "{{ _('expenses') }}",
-                    "{{ _('savings') }}"
+                    info.dataset.incomeLabel,
+                    info.dataset.expensesLabel,
+                    info.dataset.savingsLabel
                 ],
-
                 datasets: [{
-
                     data: [
-                        Number({{ ingresos|default(0) }}),
-                        Number({{ gastos|default(0) }}),
-                        Number({{ ahorro|default(0) }})
+                        Number(info.dataset.income) || 0,
+                        Number(info.dataset.expenses) || 0,
+                        Number(info.dataset.savings) || 0
                     ],
-
-                    backgroundColor: [
-                        "#9B8EA8",
-                        "#D6B8A5",
-                        "#8CB89A"
-                    ],
-
+                    backgroundColor: ["#9B8EA8", "#D6B8A5", "#8CB89A"],
                     borderRadius: 12,
                     borderSkipped: false
-
                 }]
-
             },
-
             options: {
-
                 responsive: true,
                 maintainAspectRatio: false,
-
-                animation: {
-                    duration: 1200,
-                    easing: "easeOutQuart"
-                },
-
+                animation: { duration: 1200, easing: "easeOutQuart" },
                 plugins: {
-
-                    legend: {
-                        display: false
-                    },
-
+                    legend: { display: false },
                     tooltip: {
                         backgroundColor: "#9B8EA8",
                         titleColor: "#ffffff",
@@ -285,61 +271,53 @@ document.addEventListener("DOMContentLoaded", function () {
                         padding: 12,
                         cornerRadius: 10
                     }
-
                 },
-
                 scales: {
-
                     y: {
-
                         beginAtZero: true,
-
-                        grid: {
-                            color: "rgba(200,200,200,.15)"
-                        },
-
-                        ticks: {
-
-                            color: document.documentElement.classList.contains("dark")
-                                ? "#D1D5DB"
-                                : "#6B7280"
-
-                        }
-
+                        grid: { color: "rgba(200,200,200,.15)" },
+                        ticks: { color: tickColor }
                     },
-
                     x: {
-
-                        grid: {
-                            display: false
-                        },
-
-                        ticks: {
-
-                            color: document.documentElement.classList.contains("dark")
-                                ? "#D1D5DB"
-                                : "#6B7280"
-
-                        }
-
+                        grid: { display: false },
+                        ticks: { color: tickColor }
                     }
-
                 }
-
             }
-
         });
-
     }
 
-    // Animación de las tarjetas
+    // Carga Chart.js solo si hace falta y dibuja la gráfica cuando esté lista
+    function loadChartLibrary(callback) {
+        if (typeof Chart !== "undefined") {
+            callback();
+            return;
+        }
+
+        let script = document.getElementById("chartjs-lib");
+
+        if (!script) {
+            script = document.createElement("script");
+            script.id = "chartjs-lib";
+            script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js";
+            document.head.appendChild(script);
+        }
+
+        script.addEventListener("load", callback);
+    }
+
+    // Tarjetas con números animados
     animateCounter("balanceCounter", "$", "", 2);
     animateCounter("pendingCounter");
     animateCounter("coursesCounter");
     animateCounter("progressCounter", "", "%");
 
-});
+    // Gráfica de finanzas (solo si hay datos)
+    if (document.getElementById("financeChart")) {
+        loadChartLibrary(drawChart);
+    }
 
+})();
 </script>
 
 {% endblock %}

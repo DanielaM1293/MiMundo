@@ -9,6 +9,8 @@
 <form method="post"
       class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow border border-gray-200 dark:border-gray-700">
 
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
     <label class="block text-sm mb-1 text-gray-600 dark:text-gray-300">
         {{ _('course_name') }}
     </label>
